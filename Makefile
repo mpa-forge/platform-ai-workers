@@ -68,13 +68,6 @@ format-check: repo-format-check
 
 repo-lint:
 	@if find . -name '*.go' -not -path './vendor/*' | grep -q .; then \
-		unformatted="$$(find . -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -l)"; \
-		if [[ -n "$$unformatted" ]]; then \
-			echo "The following Go files need formatting:"; \
-			echo "$$unformatted"; \
-			exit 1; \
-		fi; \
-		go vet ./...; \
 		go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./...; \
 	else \
 		echo "No Go files yet; skipping Go lint."; \
