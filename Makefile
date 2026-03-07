@@ -1,6 +1,7 @@
 SHELL := bash
 
 GO_VERSION := 1.24.12
+GOLANGCI_LINT_VERSION := v1.64.8
 
 .PHONY: help bootstrap install-tools check-tools print-toolchain install-dev-tools precommit-install precommit-run lint format format-check repo-lint repo-format repo-format-check
 
@@ -48,6 +49,7 @@ check-tools:
 
 print-toolchain:
 	@echo "Go $(GO_VERSION)"
+	@echo "golangci-lint $(GOLANGCI_LINT_VERSION)"
 
 install-dev-tools:
 	python -m pip install --user -r requirements-dev.txt
@@ -73,6 +75,7 @@ repo-lint:
 			exit 1; \
 		fi; \
 		go vet ./...; \
+		go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./...; \
 	else \
 		echo "No Go files yet; skipping Go lint."; \
 	fi
