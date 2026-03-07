@@ -34,6 +34,24 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
 - Apply formatting: `make format`
 - Check formatting only: `make format-check`
 
+## Environment
+- Copy `.env.example` to `.env` for local development
+- Required local baseline variables:
+  - `APP_ENV`
+  - `LOG_LEVEL`
+  - `WORKER_RUNTIME_MODE`
+  - `WORKER_ID`
+  - `TARGET_REPO`
+  - `MAX_PENDING_REVIEW`
+  - `POLL_INTERVAL`
+- Additional runtime variables documented now for later worker implementation:
+  - `GITHUB_TOKEN`
+  - `OPENAI_API_KEY`
+  - `TRIGGER_SOURCE`
+  - `TARGET_ISSUE`
+  - `TARGET_PR`
+  - `EVENT_ID`
+
 ## Run
 No runnable worker entrypoint exists yet.
 The baseline runtime implementation will be added in `P1-T11` and `P1-T12`.
