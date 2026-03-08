@@ -46,6 +46,70 @@ Together they provide:
 - one active lane owner at a time
 - dedupe of repeated GitHub event wake-ups
 
+## Locking logic
+
+The lane lock is implemented in `internal/workspace/workspace.go` as a remote branch lease:
+
+- branch name: `ai-lock/<worker-id>`
+- payload file committed on that branch: `.ai-worker-lock.json`
+
+The lock record stores:
+
+- `worker_id`
+- `repo`
+- `run_id`
+- optional `event_id`
+- `acquired_at`
+- `base_branch`
+
+### Acquisition sequence
+
+1. Fetch remote refs.
+2. Check whether `origin/ai-lock/<worker-id>` already exists.
+3. If it exists:
+   - read `.ai-worker-lock.json`
+   - if the lock is younger than `LOCK_STALE_AFTER`, reject the run
+   - if the lock is older than `LOCK_STALE_AFTER`, delete the stale lock branch
+4. Create a local lock commit containing `.ai-worker-lock.json`
+5. Push `ai-lock/<worker-id>` to origin
+
+### Important concurrency detail
+
+The read/check step is not atomic.
+
+Two workers can both observe "no current lock" and both try to acquire one. In that race, the effective owner is the one whose push of `ai-lock/<worker-id>` succeeds. The other run must treat push failure as "lock not acquired".
+
+So the current implementation does **not** guarantee atomicity at the "read remote state" step. It relies on remote branch update success as the ownership decision point.
+
+This is acceptable for the current phase because it prevents concurrent steady-state ownership without introducing extra infrastructure, but it is still a lightweight distributed lock approximation rather than a strict lease service.
+
+### Stale lock reclaim
+
+If a previous run died without releasing the branch lock:
+
+- a later worker reads `.ai-worker-lock.json`
+- compares `acquired_at` to `LOCK_STALE_AFTER`
+- deletes the stale lock branch
+- then attempts normal acquisition
+
+This makes timeout/crash recovery possible, but stale-lock reclaim is the most race-prone part of the current design.
+
+### Current guarantees
+
+The branch lock is intended to provide:
+
+- one active lane owner per `WORKER_ID` in normal operation
+- a visible remote record of lane ownership
+- simple crash recovery through stale lock expiry
+
+It does **not** provide:
+
+- a fully atomic distributed lock
+- transactional stale-lock handoff
+- hard guarantees equal to a dedicated lease store such as Firestore, GCS generation locks, or Cloud SQL row locks
+
+If stronger guarantees are needed later, the lock mechanism should move to a dedicated remote lease primitive.
+
 ## Deliberate boundary
 
 The Go worker is the control plane.
