@@ -40,6 +40,9 @@ func New(cfg config.Config) (*Worker, error) {
 	}, nil
 }
 
+// Run executes the shared local/cloud worker loop.
+// The only mode-specific behavior is lifecycle: cloud exits on terminal conditions,
+// while local keeps polling after idle/backpressure outcomes.
 func (w *Worker) Run(ctx context.Context) (string, error) {
 	if err := w.github.EnsureGitAuth(ctx); err != nil {
 		return "", fmt.Errorf("configure gh git auth: %w", err)
@@ -120,6 +123,8 @@ func (w *Worker) runOnce(ctx context.Context, workspacePath string) (string, err
 		return "duplicate_event", nil
 	}
 
+	// A resumed issue is already in-progress and acts as the current lane lease holder.
+	// Fresh ready/rework items are claimed here before any workspace changes begin.
 	if !issue.HasLabel("ai:in-progress") {
 		fromLabel := "ai:ready"
 		if issue.HasLabel("ai:rework-requested") {
@@ -136,6 +141,7 @@ func (w *Worker) runOnce(ctx context.Context, workspacePath string) (string, err
 		}
 	}
 
+	// Reset the reusable clone once more after claim so Codex always starts from a clean base branch.
 	if _, err := w.workspace.Prepare(ctx, w.cfg.BaseBranch); err != nil {
 		_ = w.failIssue(ctx, issue, fmt.Sprintf("workspace preparation failed: %v", err))
 		return "", err
@@ -203,6 +209,8 @@ func (w *Worker) runOnce(ctx context.Context, workspacePath string) (string, err
 
 var errNoEligibleIssue = errors.New("no eligible issue")
 
+// selectIssue resumes existing in-progress work before accepting any new ready/rework item.
+// This keeps the lane deterministic after crashes or timeouts.
 func (w *Worker) selectIssue(ctx context.Context) (model.Issue, error) {
 	inProgressIssues, err := w.github.InProgressIssues(ctx, w.cfg.WorkerID)
 	if err != nil {
@@ -272,6 +280,8 @@ func hasHandledEvent(issue model.Issue, eventID string) bool {
 	return false
 }
 
+// automationMarker writes machine-readable comments that let later runs dedupe repeated
+// GitHub review/comment triggers without needing a separate event store.
 func automationMarker(status string, runID string, eventID string, detail string) string {
 	message := fmt.Sprintf("automation-marker status=%s run-id=%s automation-event-id:%s", status, runID, eventID)
 	if detail != "" {
