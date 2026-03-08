@@ -37,7 +37,7 @@ func (c Client) ListIssuesByLabel(ctx context.Context, labels ...string) ([]mode
 		"--repo", c.repo,
 		"--state", "open",
 		"--limit", "100",
-		"--json", "number,title,body,labels,url",
+		"--json", "number,title,body,labels,url,updatedAt",
 	}
 	for _, label := range labels {
 		args = append(args, "--label", label)
@@ -59,7 +59,7 @@ func (c Client) GetIssue(ctx context.Context, number int) (model.Issue, error) {
 	result, err := c.runner.Run(ctx, "", c.env, "gh", "issue", "view",
 		fmt.Sprintf("%d", number),
 		"--repo", c.repo,
-		"--json", "number,title,body,labels,url",
+		"--json", "number,title,body,labels,url,updatedAt,comments",
 	)
 	if err != nil {
 		return model.Issue{}, err
@@ -121,6 +121,10 @@ func (c Client) PendingReviewCount(ctx context.Context, workerID string) (int, e
 		return 0, err
 	}
 	return len(issues), nil
+}
+
+func (c Client) InProgressIssues(ctx context.Context, workerID string) ([]model.Issue, error) {
+	return c.ListIssuesByLabel(ctx, "ai:in-progress", workerLabel(workerID))
 }
 
 func workerLabel(workerID string) string {

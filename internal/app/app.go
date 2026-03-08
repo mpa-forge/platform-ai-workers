@@ -45,10 +45,37 @@ func (w *Worker) Run(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("configure gh git auth: %w", err)
 	}
 
+	workspacePath, err := w.workspace.Prepare(ctx, w.cfg.BaseBranch)
+	if err != nil {
+		return "", fmt.Errorf("prepare worker workspace: %w", err)
+	}
+
+	releaseLock, err := w.workspace.AcquireLaneLock(
+		ctx,
+		workspacePath,
+		w.cfg.WorkerID,
+		w.cfg.RunID,
+		w.cfg.EventID,
+		w.cfg.BaseBranch,
+		w.cfg.LockStaleAfter,
+	)
+	if err != nil {
+		if w.cfg.RuntimeMode == config.RuntimeModeCloud {
+			return "worker_already_active", nil
+		}
+		log.Printf("worker lane busy: %v", err)
+		return "worker_already_active", nil
+	}
+	defer func() {
+		if releaseErr := releaseLock(); releaseErr != nil {
+			log.Printf("release lane lock failed: %v", releaseErr)
+		}
+	}()
+
 	for {
-		result, err := w.runOnce(ctx)
-		if err != nil {
-			return "", err
+		result, runErr := w.runOnce(ctx, workspacePath)
+		if runErr != nil {
+			return "", runErr
 		}
 
 		switch result {
@@ -56,12 +83,7 @@ func (w *Worker) Run(ctx context.Context) (string, error) {
 			if w.cfg.RuntimeMode == config.RuntimeModeCloud {
 				return result, nil
 			}
-		case "pending_review_limit_reached":
-			if w.cfg.RuntimeMode == config.RuntimeModeCloud {
-				return result, nil
-			}
-			time.Sleep(w.cfg.PollInterval)
-		case "no_work":
+		case "pending_review_limit_reached", "no_work", "duplicate_event", "worker_already_active":
 			if w.cfg.RuntimeMode == config.RuntimeModeCloud {
 				return result, nil
 			}
@@ -72,7 +94,7 @@ func (w *Worker) Run(ctx context.Context) (string, error) {
 	}
 }
 
-func (w *Worker) runOnce(ctx context.Context) (string, error) {
+func (w *Worker) runOnce(ctx context.Context, workspacePath string) (string, error) {
 	pending, err := w.github.PendingReviewCount(ctx, w.cfg.WorkerID)
 	if err != nil {
 		return "", fmt.Errorf("count pending review: %w", err)
@@ -93,16 +115,28 @@ func (w *Worker) runOnce(ctx context.Context) (string, error) {
 
 	log.Printf("selected issue #%d %q", issue.Number, issue.Title)
 
-	fromLabel := "ai:ready"
-	if issue.HasLabel("ai:rework-requested") {
-		fromLabel = "ai:rework-requested"
-	}
-	if err := w.github.UpdateIssueLabels(ctx, issue.Number, []string{"ai:in-progress"}, []string{fromLabel, "ai:failed"}); err != nil {
-		return "", fmt.Errorf("claim issue: %w", err)
+	if w.cfg.EventID != "" && hasHandledEvent(issue, w.cfg.EventID) {
+		log.Printf("event %s already handled for issue #%d", w.cfg.EventID, issue.Number)
+		return "duplicate_event", nil
 	}
 
-	workspacePath, err := w.workspace.Prepare(ctx, w.cfg.BaseBranch)
-	if err != nil {
+	if !issue.HasLabel("ai:in-progress") {
+		fromLabel := "ai:ready"
+		if issue.HasLabel("ai:rework-requested") {
+			fromLabel = "ai:rework-requested"
+		}
+		if err := w.github.UpdateIssueLabels(ctx, issue.Number, []string{"ai:in-progress"}, []string{fromLabel, "ai:failed"}); err != nil {
+			return "", fmt.Errorf("claim issue: %w", err)
+		}
+	}
+
+	if w.cfg.EventID != "" {
+		if err := w.github.CommentIssue(ctx, issue.Number, automationMarker("started", w.cfg.RunID, w.cfg.EventID, "")); err != nil {
+			return "", fmt.Errorf("record start marker: %w", err)
+		}
+	}
+
+	if _, err := w.workspace.Prepare(ctx, w.cfg.BaseBranch); err != nil {
 		_ = w.failIssue(ctx, issue, fmt.Sprintf("workspace preparation failed: %v", err))
 		return "", err
 	}
@@ -158,6 +192,11 @@ func (w *Worker) runOnce(ctx context.Context) (string, error) {
 	if err := w.github.CommentIssue(ctx, issue.Number, fmt.Sprintf("Automation run completed. Draft PR: %s", pr.URL)); err != nil {
 		return "", fmt.Errorf("comment issue: %w", err)
 	}
+	if w.cfg.EventID != "" {
+		if err := w.github.CommentIssue(ctx, issue.Number, automationMarker("completed", w.cfg.RunID, w.cfg.EventID, pr.URL)); err != nil {
+			return "", fmt.Errorf("record completion marker: %w", err)
+		}
+	}
 
 	return "processed", nil
 }
@@ -165,10 +204,21 @@ func (w *Worker) runOnce(ctx context.Context) (string, error) {
 var errNoEligibleIssue = errors.New("no eligible issue")
 
 func (w *Worker) selectIssue(ctx context.Context) (model.Issue, error) {
+	inProgressIssues, err := w.github.InProgressIssues(ctx, w.cfg.WorkerID)
+	if err != nil {
+		return model.Issue{}, err
+	}
+	if len(inProgressIssues) > 1 {
+		return model.Issue{}, fmt.Errorf("multiple ai:in-progress issues found for worker %s", w.cfg.WorkerID)
+	}
+	if len(inProgressIssues) == 1 {
+		return w.github.GetIssue(ctx, inProgressIssues[0].Number)
+	}
+
 	if w.cfg.TargetIssue > 0 {
-		issue, err := w.github.GetIssue(ctx, w.cfg.TargetIssue)
-		if err != nil {
-			return model.Issue{}, err
+		issue, getErr := w.github.GetIssue(ctx, w.cfg.TargetIssue)
+		if getErr != nil {
+			return model.Issue{}, getErr
 		}
 		if issue.HasLabel("worker:"+w.cfg.WorkerID) && (issue.HasLabel("ai:rework-requested") || issue.HasLabel("ai:ready")) {
 			return issue, nil
@@ -182,7 +232,7 @@ func (w *Worker) selectIssue(ctx context.Context) (model.Issue, error) {
 		return model.Issue{}, err
 	}
 	if len(reworkIssues) > 0 {
-		return reworkIssues[0], nil
+		return w.github.GetIssue(ctx, reworkIssues[0].Number)
 	}
 
 	readyIssues, err := w.github.ListIssuesByLabel(ctx, "ai:ready", workerLabel)
@@ -190,7 +240,7 @@ func (w *Worker) selectIssue(ctx context.Context) (model.Issue, error) {
 		return model.Issue{}, err
 	}
 	if len(readyIssues) > 0 {
-		return readyIssues[0], nil
+		return w.github.GetIssue(ctx, readyIssues[0].Number)
 	}
 
 	return model.Issue{}, errNoEligibleIssue
@@ -199,10 +249,35 @@ func (w *Worker) selectIssue(ctx context.Context) (model.Issue, error) {
 func (w *Worker) failIssue(ctx context.Context, issue model.Issue, reason string) error {
 	commentErr := w.github.CommentIssue(ctx, issue.Number, "Automation run failed: "+reason)
 	labelErr := w.github.UpdateIssueLabels(ctx, issue.Number, []string{"ai:failed"}, []string{"ai:in-progress"})
+	markerErr := error(nil)
+	if w.cfg.EventID != "" {
+		markerErr = w.github.CommentIssue(ctx, issue.Number, automationMarker("failed", w.cfg.RunID, w.cfg.EventID, reason))
+	}
 	if commentErr != nil {
 		return commentErr
 	}
+	if markerErr != nil {
+		return markerErr
+	}
 	return labelErr
+}
+
+func hasHandledEvent(issue model.Issue, eventID string) bool {
+	marker := "automation-event-id:" + eventID
+	for _, comment := range issue.Comments {
+		if strings.Contains(comment.Body, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func automationMarker(status string, runID string, eventID string, detail string) string {
+	message := fmt.Sprintf("automation-marker status=%s run-id=%s automation-event-id:%s", status, runID, eventID)
+	if detail != "" {
+		message += " detail=" + detail
+	}
+	return message
 }
 
 func sanitize(value string) string {

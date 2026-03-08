@@ -45,6 +45,8 @@ type Config struct {
 	WorkspaceRoot    string
 	BaseBranch       string
 	DryRun           bool
+	RunID            string
+	LockStaleAfter   time.Duration
 }
 
 func Load() (Config, error) {
@@ -65,6 +67,8 @@ func Load() (Config, error) {
 		PollInterval:     30 * time.Second,
 		PromptTemplate:   strings.TrimSpace(os.Getenv("PROMPT_TEMPLATE")),
 		WorkspaceRoot:    strings.TrimSpace(os.Getenv("WORKSPACE_ROOT")),
+		RunID:            strings.TrimSpace(os.Getenv("RUN_ID")),
+		LockStaleAfter:   15 * time.Minute,
 	}
 
 	mode := getEnvDefault("WORKER_RUNTIME_MODE", string(RuntimeModeLocal))
@@ -97,6 +101,14 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("invalid POLL_INTERVAL %q", raw)
 		}
 		cfg.PollInterval = duration
+	}
+
+	if raw := strings.TrimSpace(os.Getenv("LOCK_STALE_AFTER")); raw != "" {
+		duration, err := time.ParseDuration(raw)
+		if err != nil || duration <= 0 {
+			return Config{}, fmt.Errorf("invalid LOCK_STALE_AFTER %q", raw)
+		}
+		cfg.LockStaleAfter = duration
 	}
 
 	if raw := strings.TrimSpace(os.Getenv("TARGET_ISSUE")); raw != "" {
@@ -132,6 +144,9 @@ func Load() (Config, error) {
 	}
 	if cfg.WorkspaceRoot == "" {
 		cfg.WorkspaceRoot = filepath.Join(".", ".workspaces")
+	}
+	if cfg.RunID == "" {
+		cfg.RunID = fmt.Sprintf("%s-%d", cfg.WorkerID, time.Now().UTC().UnixNano())
 	}
 
 	return cfg, nil

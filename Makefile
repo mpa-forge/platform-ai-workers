@@ -22,7 +22,7 @@ help:
 	@echo "  build-image       Build the local worker container image"
 
 bootstrap: install-tools check-tools install-dev-tools
-	@if find . -name '*.go' -not -path './vendor/*' | grep -q .; then \
+	@if find . -name '*.go' -not -path './vendor/*' -not -path './.workspaces/*' | grep -q .; then \
 		go mod download; \
 	else \
 		echo "No Go files yet; skipping go mod download."; \
@@ -79,22 +79,22 @@ build-image:
 	docker build -t platform-ai-workers:local .
 
 repo-lint:
-	@if find . -name '*.go' -not -path './vendor/*' | grep -q .; then \
+	@if find . -name '*.go' -not -path './vendor/*' -not -path './.workspaces/*' | grep -q .; then \
 		go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./...; \
 	else \
 		echo "No Go files yet; skipping Go lint."; \
 	fi
 
 repo-format:
-	@if find . -name '*.go' -not -path './vendor/*' | grep -q .; then \
-		find . -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -w; \
+	@if find . -name '*.go' -not -path './vendor/*' -not -path './.workspaces/*' | grep -q .; then \
+		find . -name '*.go' -not -path './vendor/*' -not -path './.workspaces/*' -print0 | xargs -0 gofmt -w; \
 	else \
 		echo "No Go files yet; skipping Go format."; \
 	fi
 
 repo-format-check:
-	@if find . -name '*.go' -not -path './vendor/*' | grep -q .; then \
-		unformatted="$$(find . -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -l)"; \
+	@if find . -name '*.go' -not -path './vendor/*' -not -path './.workspaces/*' | grep -q .; then \
+		unformatted="$$(find . -name '*.go' -not -path './vendor/*' -not -path './.workspaces/*' -print0 | xargs -0 gofmt -l)"; \
 		if [[ -n "$$unformatted" ]]; then \
 			echo "The following Go files need formatting:"; \
 			echo "$$unformatted"; \
