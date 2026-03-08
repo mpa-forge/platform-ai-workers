@@ -14,7 +14,7 @@ AI worker runtime repository for task-to-code automation in the platform bluepri
 ## Toolchain
 
 - GNU Make (or a compatible `make` implementation) and a bash-compatible shell
-- Go `1.24.12`
+- Go `1.25.1`
 - Version pin source: `.tool-versions` and `go.mod`
 
 ## Setup

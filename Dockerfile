@@ -1,4 +1,4 @@
-FROM golang:1.24.12-bookworm AS go-builder
+FROM golang:1.25.1-bookworm AS go-builder
 
 WORKDIR /src
 COPY go.mod ./
@@ -9,7 +9,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/worker ./cmd/worker
 FROM node:24-bookworm-slim
 
 ARG GH_VERSION=2.87.0
-ARG GO_VERSION=1.24.12
+ARG GO_VERSION=1.25.1
 ARG CODEX_VERSION=0.106.0
 
 ENV PATH="/usr/local/go/bin:${PATH}"

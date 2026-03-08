@@ -1,6 +1,6 @@
 SHELL := bash
 
-GO_VERSION := 1.24.12
+GO_VERSION := 1.25.1
 GOLANGCI_LINT_VERSION := v1.64.8
 
 .PHONY: help bootstrap install-tools check-tools print-toolchain install-dev-tools precommit-install precommit-run lint format format-check repo-lint repo-format repo-format-check run test build-image
