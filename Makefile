@@ -3,7 +3,7 @@ SHELL := bash
 GO_VERSION := 1.24.12
 GOLANGCI_LINT_VERSION := v1.64.8
 
-.PHONY: help bootstrap install-tools check-tools print-toolchain install-dev-tools precommit-install precommit-run lint format format-check repo-lint repo-format repo-format-check
+.PHONY: help bootstrap install-tools check-tools print-toolchain install-dev-tools precommit-install precommit-run lint format format-check repo-lint repo-format repo-format-check run test build-image
 
 help:
 	@echo "Targets:"
@@ -17,6 +17,9 @@ help:
 	@echo "  lint              Run repo lint checks"
 	@echo "  format            Apply repo formatting"
 	@echo "  format-check      Check repo formatting without writing changes"
+	@echo "  run               Start the worker with the current environment"
+	@echo "  test              Run Go tests"
+	@echo "  build-image       Build the local worker container image"
 
 bootstrap: install-tools check-tools install-dev-tools
 	@if find . -name '*.go' -not -path './vendor/*' | grep -q .; then \
@@ -65,6 +68,15 @@ lint: repo-lint
 format: repo-format
 
 format-check: repo-format-check
+
+run:
+	go run ./cmd/worker run
+
+test:
+	go test ./...
+
+build-image:
+	docker build -t platform-ai-workers:local .
 
 repo-lint:
 	@if find . -name '*.go' -not -path './vendor/*' | grep -q .; then \

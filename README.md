@@ -35,7 +35,7 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
 - Check formatting only: `make format-check`
 
 ## Environment
-- Copy `.env.example` to `.env` for local development
+- Copy `.env.example` to `.env.local` for local development
 - Required local baseline variables:
   - `APP_ENV`
   - `LOG_LEVEL`
@@ -44,18 +44,48 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
   - `TARGET_REPO`
   - `MAX_PENDING_REVIEW`
   - `POLL_INTERVAL`
-- Additional runtime variables documented now for later worker implementation:
+  - `GITHUB_TOKEN`
+- Additional runtime variables for the worker baseline:
+  - `BASE_BRANCH`
+  - `WORKSPACE_ROOT`
+  - `AGENT_CLI`
+  - `AGENT_AUTH_MODE`
+  - `AGENT_MODEL`
+  - `PROMPT_TEMPLATE`
   - `GITHUB_TOKEN`
   - `OPENAI_API_KEY`
   - `TRIGGER_SOURCE`
   - `TARGET_ISSUE`
   - `TARGET_PR`
   - `EVENT_ID`
+  - `DRY_RUN`
 
 ## Run
-No runnable worker entrypoint exists yet.
-The baseline runtime implementation will be added in `P1-T11` and `P1-T12`.
+- Local host execution:
+  - `make run`
+- Container execution:
+  - `docker run --rm --env-file .env.local platform-ai-workers:local run`
+
+Current baseline behavior:
+- one Go runtime entrypoint for local and cloud execution
+- shared GitHub poll loop for `ai:rework-requested` then `ai:ready`
+- issue state transitions:
+  - `ai:ready` -> `ai:in-progress` -> `ai:ready-for-review`
+  - `ai:rework-requested` -> `ai:in-progress` -> `ai:ready-for-review`
+  - failures move the issue to `ai:failed`
+- worker-owned reusable clone under `WORKSPACE_ROOT`
+- Codex CLI subprocess execution against the checked-out target repository
+- prompt-template-driven task instructions in `prompts/task.md.tmpl`
+- agent is instructed to run `make lint`, commit, push, and create/update the draft PR with `gh`
+- local mode keeps polling; cloud mode exits on `no_work` or `pending_review_limit_reached`
 
 ## Test
-No automated test suite is configured yet.
-Linting, formatting, and test commands will be introduced incrementally in later tasks.
+- Unit tests: `make test`
+- Lint: `make lint`
+- Formatting: `make format` / `make format-check`
+
+## Implementation Notes
+- Local and cloud use the same worker binary and the same runtime codepath.
+- `AGENT_AUTH_MODE=chatgpt` assumes Codex CLI is already logged in on the machine or inside the container.
+- `AGENT_AUTH_MODE=api` requires `OPENAI_API_KEY`.
+- The baseline keeps branch/PR operations inside the agent prompt so the same workflow can run locally and later in Cloud Run with the same Codex CLI contract.
