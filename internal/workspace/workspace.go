@@ -20,6 +20,8 @@ type Manager struct {
 	runner shell.Runner
 }
 
+// LaneLock is persisted in the temporary lock branch so competing runs can inspect
+// who owns the lane and whether the lease is old enough to reclaim.
 type LaneLock struct {
 	WorkerID   string    `json:"worker_id"`
 	Repo       string    `json:"repo"`
@@ -38,6 +40,9 @@ func New(root string, repo string, env []string) Manager {
 	}
 }
 
+// Prepare returns a reusable clean clone for the target repo.
+// The worker intentionally reuses one checkout and resets it to origin/<baseBranch>
+// between tasks instead of recloning every time.
 func (m Manager) Prepare(ctx context.Context, baseBranch string) (string, error) {
 	absoluteRoot, err := filepath.Abs(m.root)
 	if err != nil {
@@ -80,6 +85,9 @@ func (m Manager) Prepare(ctx context.Context, baseBranch string) (string, error)
 	return path, nil
 }
 
+// AcquireLaneLock serializes runs for one WORKER_ID across local and cloud executions.
+// The lock lives in a remote branch so a second process can observe and reject/steal it
+// without requiring extra infrastructure in this phase.
 func (m Manager) AcquireLaneLock(ctx context.Context, workspacePath string, workerID string, runID string, eventID string, baseBranch string, staleAfter time.Duration) (func() error, error) {
 	lockBranch := lockBranchName(workerID)
 

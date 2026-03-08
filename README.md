@@ -110,3 +110,4 @@ Current baseline behavior:
 - `AGENT_AUTH_MODE=chatgpt` assumes Codex CLI is already logged in on the machine or inside the container.
 - `AGENT_AUTH_MODE=api` requires `OPENAI_API_KEY`.
 - The baseline keeps branch/PR operations inside the agent prompt so the same workflow can run locally and later in Cloud Run with the same Codex CLI contract.
+- Runtime structure notes: `docs/worker-runtime.md`
