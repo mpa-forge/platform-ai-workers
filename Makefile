@@ -3,11 +3,12 @@ SHELL := bash
 GO_VERSION := 1.25.1
 GOLANGCI_LINT_VERSION := v1.64.8
 
-.PHONY: help bootstrap install-tools check-tools print-toolchain install-dev-tools precommit-install precommit-run lint format format-check repo-lint repo-format repo-format-check run test build-image
+.PHONY: help bootstrap doctor install-tools check-tools print-toolchain install-dev-tools precommit-install precommit-run lint format format-check repo-lint repo-format repo-format-check run test build-image
 
 help:
 	@echo "Targets:"
 	@echo "  bootstrap         Install toolchain when possible and run baseline setup"
+	@echo "  doctor            Run shared workstation checks from sibling platform-blueprint-specs"
 	@echo "  install-tools     Install pinned tools with mise/asdf if available"
 	@echo "  check-tools       Validate pinned tool versions"
 	@echo "  print-toolchain   Print pinned tool versions"
@@ -26,6 +27,15 @@ bootstrap: install-tools check-tools install-dev-tools
 		go mod download; \
 	else \
 		echo "No Go files yet; skipping go mod download."; \
+	fi
+
+doctor:
+	@if [[ -f ../platform-blueprint-specs/scripts/windows-tooling-doctor.ps1 ]]; then \
+		powershell -ExecutionPolicy Bypass -File ../platform-blueprint-specs/scripts/windows-tooling-doctor.ps1; \
+	else \
+		echo "Shared doctor script not found at ../platform-blueprint-specs/scripts/windows-tooling-doctor.ps1" >&2; \
+		echo "Keep platform-blueprint-specs as a sibling checkout to use make doctor in this workspace." >&2; \
+		exit 1; \
 	fi
 
 install-tools:
