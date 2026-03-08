@@ -14,13 +14,14 @@ Use this skill when the repository is being changed by an automated AI worker or
    - `make lint` if present
    - `make test` if present
    - `make format-check` if present
-5. If formatting or lint fixes are needed, apply them and rerun validation.
-6. Prepare GitHub delivery:
+5. If the repo has `.pre-commit-config.yaml`, run `make precommit-run` when available before committing. Otherwise use `python -m pre_commit run --all-files`.
+6. If formatting or lint fixes are needed, apply them and rerun validation.
+7. Prepare GitHub delivery:
    - ensure work is on a short-lived branch
    - create a focused commit
    - push the branch
-   - create or update a draft PR with `gh`
-7. Leave the repo in a clean state.
+   - create or update a normal PR with `gh` unless the task explicitly requires draft mode
+8. Leave the repo in a clean state.
 
 ## GitHub CLI Guidance
 
@@ -29,7 +30,7 @@ Preferred flow:
 1. Check current branch and status.
 2. Commit with a concise task-focused message.
 3. Push with `git push -u origin <branch>` when needed.
-4. Create or update a draft PR with `gh pr create` or `gh pr edit`.
+4. Create or update a normal PR with `gh pr create` or `gh pr edit` unless the task explicitly requires draft mode.
 
 Do not:
 
