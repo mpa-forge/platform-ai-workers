@@ -21,13 +21,15 @@ AI worker runtime repository for task-to-code automation in the platform bluepri
 
 Before running bootstrap:
 
+- Shared workspace requirement: keep `platform-blueprint-specs` checked out as a sibling directory if you want to use `make doctor`.
 - Required: GNU Make (or a compatible `make` implementation) and a bash-compatible shell
 - Recommended: `mise` or `asdf` for automatic tool installation from `.tool-versions`
 - Fallback: manually install the pinned tool versions listed above
 
-Run the bootstrap command from the repository root:
+Run the setup commands from the repository root:
 
-- Make: `make bootstrap`
+- Workstation checks: `make doctor`
+- Bootstrap: `make bootstrap`
 
 Bootstrap validates the pinned Go toolchain and runs `go mod download`.
 If `mise` or `asdf` is available, the script will use it to install the pinned toolchain automatically.
