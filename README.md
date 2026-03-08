@@ -61,6 +61,8 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
   - `AGENT_AUTH_MODE`
   - `AGENT_MODEL`
   - `PROMPT_TEMPLATE`
+  - `RUN_ID`
+  - `LOCK_STALE_AFTER`
   - `GITHUB_TOKEN`
   - `OPENAI_API_KEY`
   - `TRIGGER_SOURCE`
@@ -87,6 +89,9 @@ Current baseline behavior:
   - `ai:ready` -> `ai:in-progress` -> `ai:ready-for-review`
   - `ai:rework-requested` -> `ai:in-progress` -> `ai:ready-for-review`
   - failures move the issue to `ai:failed`
+- per-worker remote lane lock via `ai-lock/<worker-id>` branch in the target repo
+- existing `ai:in-progress` work is resumed before new ready/rework selection
+- event-triggered reruns are deduplicated through `EVENT_ID` markers stored on the issue
 - worker-owned reusable clone under `WORKSPACE_ROOT`
 - Codex CLI subprocess execution against the checked-out target repository
 - prompt-template-driven task instructions in `prompts/task.md.tmpl`
