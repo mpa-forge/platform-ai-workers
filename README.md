@@ -111,3 +111,4 @@ Current baseline behavior:
 - `AGENT_AUTH_MODE=api` requires `OPENAI_API_KEY`.
 - The baseline keeps branch/PR operations inside the agent prompt so the same workflow can run locally and later in Cloud Run with the same Codex CLI contract.
 - Runtime structure notes: `docs/worker-runtime.md`
+- Branch-lock semantics and limitations are documented in `docs/worker-runtime.md#locking-logic`
