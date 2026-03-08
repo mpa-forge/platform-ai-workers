@@ -3,6 +3,8 @@ dist/
 coverage/
 .env
 .env.local
+.workspaces/
+bin/
 .DS_Store
 Thumbs.db
 .idea/

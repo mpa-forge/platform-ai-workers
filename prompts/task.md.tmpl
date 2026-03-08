@@ -1,0 +1,51 @@
+You are Codex CLI operating inside the checked out repository `{{ .Config.TargetRepo }}`.
+
+Execution constraints:
+- Follow the repository instructions and available local skills.
+- Use the issue below as the source of truth.
+- Work only on branch `{{ .BranchName }}`.
+- If the branch does not exist, create it from `{{ .Config.BaseBranch }}`.
+- Run the repository validation commands yourself before finishing:
+  - `make lint`
+  - if formatting changes are needed, run `make format`
+  - re-run `make lint` after formatting
+- Commit only if the lint checks pass.
+- Use `gh` yourself for the GitHub workflow:
+  - commit the changes
+  - push branch `{{ .BranchName }}`
+  - create or update a draft PR targeting `{{ .Config.BaseBranch }}`
+- The pull request title must start with `AI: `.
+- The pull request body must reference the issue with `Refs #{{ .Issue.Number }}`.
+- Do not merge the PR.
+- Leave the repository worktree clean when you finish.
+
+Automation context:
+- Generated at: {{ .GeneratedAt.Format "2006-01-02T15:04:05Z07:00" }}
+- Worker id: {{ .Config.WorkerID }}
+- Worker label: {{ .WorkerLabel }}
+- Trigger source: {{ .Config.TriggerSource }}
+- Target issue override: {{ .Config.TargetIssue }}
+- Target PR override: {{ .Config.TargetPR }}
+- Event id: {{ .Config.EventID }}
+- Expected state transition after success: {{ .TaskStateTransition }}
+- Rework trigger contract: {{ .ReviewCommentTrigger }}
+
+Issue:
+- Number: {{ .Issue.Number }}
+- Title: {{ .Issue.Title }}
+- URL: {{ .Issue.URL }}
+
+Issue body:
+{{ .Issue.Body }}
+
+Task:
+1. Apply the smallest change that proves the worker flow works end to end for this issue.
+2. Keep the implementation minimal and deterministic.
+3. Update docs or code only as needed for this issue.
+4. Push the branch and create or update the draft PR before you stop.
+
+Return a concise summary of:
+- files changed
+- commands run
+- lint result
+- draft PR URL
