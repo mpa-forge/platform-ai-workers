@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Worker Issues"
+  short_description: "Manage AI worker issue state with gh CLI"
+  default_prompt: "Use $gh-ai-worker-issues to inspect or update GitHub issue labels and project state for an AI worker lane."
