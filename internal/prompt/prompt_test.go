@@ -16,7 +16,7 @@ func TestRender(t *testing.T) {
 		GeneratedAt: time.Date(2026, 3, 8, 12, 0, 0, 0, time.UTC),
 		Config: config.Config{
 			TargetRepo:    "mpa-forge/backend-api",
-			WorkerID:      "backend-api-01",
+			WorkerID:      "worker-01",
 			TriggerSource: "manual",
 			BaseBranch:    "main",
 		},
@@ -26,8 +26,8 @@ func TestRender(t *testing.T) {
 			Body:   "Do the thing",
 			URL:    "https://example.test/issues/42",
 		},
-		BranchName:          "ai/backend-api-01/issue-42",
-		WorkerLabel:         "worker:backend-api-01",
+		BranchName:          "ai/worker-01/issue-42",
+		WorkerLabel:         "worker:worker-01",
 		TaskStateTransition: "ai:in-progress -> ai:ready-for-review",
 	})
 	if err != nil {
@@ -36,7 +36,7 @@ func TestRender(t *testing.T) {
 
 	for _, expected := range []string{
 		"mpa-forge/backend-api",
-		"worker:backend-api-01",
+		"worker:worker-01",
 		"AI: ",
 		"Refs #42",
 	} {

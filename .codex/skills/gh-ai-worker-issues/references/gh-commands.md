@@ -15,19 +15,19 @@ Use this first to confirm labels and any linked project item status.
 List current in-progress work for the lane:
 
 ```powershell
-gh issue list --repo mpa-forge/backend-api --state open --label worker:backend-api-01 --label ai:in-progress --json number,title,labels
+gh issue list --repo mpa-forge/backend-api --state open --label worker:worker-01 --label ai:in-progress --json number,title,labels
 ```
 
 List review backlog for the lane:
 
 ```powershell
-gh issue list --repo mpa-forge/backend-api --state open --label worker:backend-api-01 --label ai:ready-for-review --json number,title,labels
+gh issue list --repo mpa-forge/backend-api --state open --label worker:worker-01 --label ai:ready-for-review --json number,title,labels
 ```
 
 List queued ready work for the lane:
 
 ```powershell
-gh issue list --repo mpa-forge/backend-api --state open --label worker:backend-api-01 --label ai:ready --json number,title,labels
+gh issue list --repo mpa-forge/backend-api --state open --label worker:worker-01 --label ai:ready --json number,title,labels
 ```
 
 ## Queue a new issue for pickup
@@ -35,13 +35,13 @@ gh issue list --repo mpa-forge/backend-api --state open --label worker:backend-a
 Add the lane label and `ai:ready`:
 
 ```powershell
-gh issue edit 18 --repo mpa-forge/backend-api --add-label worker:backend-api-01 --add-label ai:ready
+gh issue edit 18 --repo mpa-forge/backend-api --add-label worker:worker-01 --add-label ai:ready
 ```
 
 If the issue has a conflicting AI state, remove it in the same command:
 
 ```powershell
-gh issue edit 18 --repo mpa-forge/backend-api --add-label worker:backend-api-01 --add-label ai:ready --remove-label ai:failed
+gh issue edit 18 --repo mpa-forge/backend-api --add-label worker:worker-01 --add-label ai:ready --remove-label ai:failed
 ```
 
 ## Requeue a failed issue

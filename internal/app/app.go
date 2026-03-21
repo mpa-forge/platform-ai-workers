@@ -173,7 +173,8 @@ func (w *Worker) runOnce(ctx context.Context, workspacePath string) (string, err
 		return "processed", nil
 	}
 
-	if _, err := w.agent.Run(ctx, w.cfg, workspacePath, renderedPrompt); err != nil {
+	agentResult, err := w.agent.Run(ctx, w.cfg, workspacePath, renderedPrompt)
+	if err != nil {
 		_ = w.failIssue(ctx, issue, fmt.Sprintf("agent execution failed: %v", err))
 		return "", err
 	}
@@ -203,6 +204,8 @@ func (w *Worker) runOnce(ctx context.Context, workspacePath string) (string, err
 			return "", fmt.Errorf("record completion marker: %w", err)
 		}
 	}
+	log.Printf("completed issue #%d; draft PR: %s", issue.Number, pr.URL)
+	log.Printf("codex last message saved to %s", agentResult.OutputPath)
 
 	return "processed", nil
 }

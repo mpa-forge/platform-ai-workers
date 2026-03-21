@@ -23,7 +23,7 @@ help:
 	@echo "  test              Run Go tests"
 	@echo "  build-image       Build the local worker container image"
 	@echo "  container-codex-dir   Create the persistent Codex auth directory for Docker runs"
-	@echo "  container-codex-login Start a one-off container to log Codex in with a ChatGPT account"
+	@echo "  container-codex-login Start a one-off container to log Codex in with device auth"
 	@echo "  run-container     Run the worker container with .env.local and the persistent Codex mount"
 
 bootstrap: install-tools check-tools install-dev-tools
@@ -99,17 +99,23 @@ container-codex-dir:
 
 container-codex-login: build-image container-codex-dir
 	@docker_codex_dir="$${HOME:-$${USERPROFILE}}/.docker-platform-ai-workers/codex"; \
-		docker run --rm -it \
+		MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' docker run --rm -it \
+			-e HOME=/root \
+			-e CODEX_HOME=/root/.codex \
 			-v "$$docker_codex_dir:/root/.codex" \
 			--entrypoint bash $(DOCKER_IMAGE) \
-			-lc "codex login && codex login status"
+			-lc "codex login --device-auth && codex login status"
 
 run-container: build-image container-codex-dir
 	@test -f .env.local || (echo ".env.local is required. Copy .env.example and set GITHUB_TOKEN before running the container." >&2; exit 1)
-	@docker_codex_dir="$${HOME:-$${USERPROFILE}}/.docker-platform-ai-workers/codex"; \
-		docker run --rm \
+	@mkdir -p .workspaces; \
+		docker_codex_dir="$${HOME:-$${USERPROFILE}}/.docker-platform-ai-workers/codex"; \
+		MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' docker run --rm \
+			-e HOME=/root \
+			-e CODEX_HOME=/root/.codex \
 			--env-file .env.local \
 			-v "$$docker_codex_dir:/root/.codex" \
+			-v "$$(pwd)/.workspaces:/app/.workspaces" \
 			$(DOCKER_IMAGE) run
 
 repo-lint:
