@@ -18,6 +18,28 @@ Explain the runtime shape of `platform-ai-workers` without forcing the reader to
 5. `internal/prompt/prompt.go` renders the task prompt from `prompts/task.md.tmpl`.
 6. `internal/agent/codex.go` invokes Codex CLI as a subprocess in the checked-out repo.
 
+## Local container auth
+
+For Docker-based local runs:
+
+- keep `AGENT_AUTH_MODE=chatgpt` when you want Codex to use an interactive ChatGPT account instead of `OPENAI_API_KEY`
+- provide `GITHUB_TOKEN` through `.env.local`; the worker validates this at startup
+- mount a persistent host directory into `/root/.codex` so the container can reuse the Codex login between runs
+
+Repo-local entrypoints:
+
+- `make container-codex-dir`
+  - creates the persistent host directory used for Docker-mounted Codex state
+- `make container-codex-login`
+  - starts a one-off container and runs `codex login`
+- `make run-container`
+  - runs the worker container with `.env.local` and the persistent `/root/.codex` mount
+
+This split is intentional:
+
+- GitHub auth for the worker control plane still comes from `GITHUB_TOKEN`
+- Codex account auth for the coding agent can come from the persistent mounted login state
+
 ## Selection order
 
 The worker processes one lane only:
