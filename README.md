@@ -45,6 +45,7 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
 ## Environment
 
 - Copy `.env.example` to `.env.local` for local development
+- Full per-variable reference: `docs/environment-variables.md`
 - For local container runs with ChatGPT account auth:
 
   - keep `AGENT_AUTH_MODE=chatgpt`
@@ -78,6 +79,8 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
   - `EVENT_ID`
   - `DRY_RUN`
 
+- See `docs/environment-variables.md` for the meaning, defaults, and current usage of every variable.
+
 ## Run
 
 - Local host execution:
@@ -87,7 +90,7 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
 
   - `make build-image`
   - `make container-codex-login`
-  - sign in with your ChatGPT account inside the one-off container
+  - complete the device-auth flow shown in the terminal
 - Container execution:
 
   - `make run-container`
@@ -105,7 +108,11 @@ Use this flow when you want the worker container to spend ChatGPT account usage 
 
 Notes:
 
+- `make container-codex-login` uses `codex login --device-auth` because browser callback auth inside the container is not reliable against the host `localhost` redirect.
+- The Docker targets force `HOME=/root` and `CODEX_HOME=/root/.codex` so Codex persists auth in the mounted directory consistently.
+- On Windows Git Bash, the Docker targets also disable MSYS path conversion so `/root/.codex` is passed to Docker as a Linux container path instead of being rewritten to a host path.
 - `make run-container` mounts the persistent Codex state directory into `/root/.codex` inside the container.
+- `make run-container` also mounts the repo-local `.workspaces/` directory into `/app/.workspaces`, so the worker clone and `.codex-last-message.txt` persist on your machine after the container exits.
 - The current worker still requires `GITHUB_TOKEN`; GitHub account login through `gh auth login` alone does not satisfy startup validation.
 - `OPENAI_API_KEY` is only required when `AGENT_AUTH_MODE=api`.
 
@@ -141,4 +148,5 @@ Current baseline behavior:
 - For Docker-based local runs, prefer `make container-codex-login` and `make run-container` so the container reuses a persistent Codex login mount.
 - The baseline keeps branch/PR operations inside the agent prompt so the same workflow can run locally and later in Cloud Run with the same Codex CLI contract.
 - Runtime structure notes: `docs/worker-runtime.md`
+- Environment variable reference: `docs/environment-variables.md`
 - Branch-lock semantics and limitations are documented in `docs/worker-runtime.md#locking-logic`

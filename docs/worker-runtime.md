@@ -4,6 +4,8 @@
 
 Explain the runtime shape of `platform-ai-workers` without forcing the reader to reconstruct it from `internal/`.
 
+For env var meanings, defaults, and current usage status, see [environment-variables.md](./environment-variables.md).
+
 ## Main flow
 
 1. `cmd/worker/main.go` loads env-backed config and starts the worker.
@@ -31,7 +33,7 @@ Repo-local entrypoints:
 - `make container-codex-dir`
   - creates the persistent host directory used for Docker-mounted Codex state
 - `make container-codex-login`
-  - starts a one-off container and runs `codex login`
+  - starts a one-off container and runs `codex login --device-auth`
 - `make run-container`
   - runs the worker container with `.env.local` and the persistent `/root/.codex` mount
 
@@ -39,6 +41,11 @@ This split is intentional:
 
 - GitHub auth for the worker control plane still comes from `GITHUB_TOKEN`
 - Codex account auth for the coding agent can come from the persistent mounted login state
+
+Device auth is preferred here because the browser callback flow redirects to a `localhost` listener inside the container, which is not reliably reachable from the host browser session.
+The Docker entrypoints also force `HOME=/root` and `CODEX_HOME=/root/.codex` so Codex writes its auth state into the mounted directory instead of depending on image defaults.
+On Windows Git Bash, the Docker targets disable MSYS path conversion for these runs so Docker receives `/root/.codex` as a container path rather than a rewritten Windows path.
+`make run-container` also mounts the host repo's `.workspaces/` directory into `/app/.workspaces`, which keeps the reusable clone and `.codex-last-message.txt` available on the host after the container exits.
 
 ## Selection order
 
