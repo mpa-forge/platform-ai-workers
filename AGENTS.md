@@ -11,9 +11,36 @@ Before making changes:
 1. Read `README.md`.
 2. Read `Makefile` if present.
 3. Read `docs/worker-runtime.md` when the task affects runtime flow, locking, or execution semantics.
-4. Read `../platform-blueprint-specs/docs/shared/agent-common-operating-rules.md`.
-5. Read `../platform-blueprint-specs/docs/shared/agent-platform-workspace-map.md`.
-6. Read `../platform-blueprint-specs/docs/shared/repo-context/platform-ai-workers.md`.
+4. Read `../platform-blueprint-specs/common/AGENTS.md`.
+5. Read `../platform-blueprint-specs/.codex/skills/automated-ai-worker/SKILL.md` when the repo is being changed by an automated AI worker or when following the same autonomous workflow manually.
+6. Read `docs/automation/ai-task-to-code-architecture.md`.
+7. Read `docs/automation/ai-task-automation-workflow.md`.
+8. Read `docs/automation/ai-worker-local-cloud-parity.md`.
+9. Read `docs/security/ai-worker-credentials.md`.
+10. Read `docs/automation/alert-ai-webhook-spec.md` when the task affects alert intake, webhook validation, or AI incident-summary flow.
+
+## Repo Role
+
+- Own the AI task-to-code automation runtime.
+- The Go worker is the control plane; the coding agent runs as a subprocess CLI.
+- Local and cloud runs must use the same codepath with environment-specific behavior limited to config and adapters.
+
+## Relevant Shared Constraints
+
+- Worker state machine is label-driven: `ai:ready`, `ai:in-progress`, `ai:ready-for-review`, `ai:rework-requested`, `ai:failed`.
+- One active worker is allowed per `worker:<id>` lane.
+- Branch + draft PR is the mandatory output path.
+- Review and rework happen on the same PR branch.
+
+## Consult Conditionally
+
+- `docs/automation/alert-ai-webhook-spec.md` when the task affects alert intake, webhook validation, or AI incident-summary flow.
+
+## Typical Validation
+
+- `make lint`
+- `make test`
+- `make format-check`
 
 ## Priority of Instructions
 
