@@ -21,6 +21,12 @@ repos:
 
   - repo: local
     hooks:
+      - id: sync-agent-skills-check
+        name: sync common skills
+        entry: make sync-agent-skills-check
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
       - id: repo-lint
         name: repo lint
         entry: make repo-lint
