@@ -13,12 +13,11 @@ Before making changes:
 3. Read `docs/worker-runtime.md` when the task affects runtime flow, locking, or execution semantics.
 4. Run `make sync-agent-skills` before starting major changes or when shared skill guidance may have changed.
 5. Read `../platform-blueprint-specs/common/AGENTS.md`.
-6. Read `.codex/skills/automated-ai-worker/SKILL.md` when the repo is being changed by an automated AI worker or when following the same autonomous workflow manually.
-7. Read `docs/automation/ai-task-to-code-architecture.md`.
-8. Read `docs/automation/ai-task-automation-workflow.md`.
-9. Read `docs/automation/ai-worker-local-cloud-parity.md`.
-10. Read `docs/security/ai-worker-credentials.md`.
-11. Read `docs/automation/alert-ai-webhook-spec.md` when the task affects alert intake, webhook validation, or AI incident-summary flow.
+6. Read `docs/automation/ai-task-to-code-architecture.md`.
+7. Read `docs/automation/ai-task-automation-workflow.md`.
+8. Read `docs/automation/ai-worker-local-cloud-parity.md`.
+9. Read `docs/security/ai-worker-credentials.md`.
+10. Read `docs/automation/alert-ai-webhook-spec.md` when the task affects alert intake, webhook validation, or AI incident-summary flow.
 
 ## Repo Role
 
@@ -42,11 +41,6 @@ Before making changes:
 - `make lint`
 - `make test`
 - `make format-check`
-
-## Shared Managed Skills
-
-Run `make sync-agent-skills` before major changes so the local common skill
-copies stay current.
 
 ## Priority of Instructions
 
