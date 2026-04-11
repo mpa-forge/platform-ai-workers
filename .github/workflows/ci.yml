@@ -12,6 +12,6 @@ permissions:
 
 jobs:
   ci:
-    uses: mpa-forge/.github/.github/workflows/reusable-ci-go.yml@codex/p4-t01-workflow-rollout
+    uses: mpa-forge/.github/.github/workflows/reusable-ci-go.yml@816e99050519226be282df48aaa86cc9d40227f9
     with:
       working-directory: "."
