@@ -1,0 +1,17 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: mpa-forge/.github/.github/workflows/reusable-ci-go.yml@main
+    with:
+      working-directory: "."
