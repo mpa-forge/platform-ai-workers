@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   ci:
-    uses: mpa-forge/.github/.github/workflows/reusable-ci-go.yml@4454175b41c288c2fe2052d84889336f3c3591b1
+    uses: mpa-forge/.github/.github/workflows/reusable-ci-go.yml@d35b82c84761bcd09dbb48fdf552d58426ae3946
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     with:
