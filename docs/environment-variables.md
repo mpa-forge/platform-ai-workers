@@ -33,13 +33,13 @@ Use it together with [`.env.example`](../.env.example) when creating `.env.local
 | `AGENT_AUTH_MODE` | No | `chatgpt` | Authentication mode for the agent. Valid values: `chatgpt`, `api`. | Actively used. `chatgpt` relies on an existing Codex login; `api` injects `OPENAI_API_KEY` into the agent process. |
 | `AGENT_MODEL` | No | empty | Optional model override passed to the agent CLI. | Actively used only when set; otherwise the agent uses its default configured model. |
 | `PROMPT_TEMPLATE` | No | `prompts/task.md.tmpl` | Template path used to render the task prompt given to Codex. | Actively used when generating the prompt file for the agent. |
-| `OPENAI_API_KEY` | Conditionally | None | OpenAI API key for `AGENT_AUTH_MODE=api`. | Required only in `api` mode. Ignored in `chatgpt` mode. |
+| `OPENAI_API_KEY` | Conditionally | None | OpenAI API key for `AGENT_AUTH_MODE=api`. | Required only in `api` mode. Ignored in `chatgpt` mode. For Cloud Run Jobs, inject from the Phase 5 GSM secret catalog instead of plaintext env values. |
 
 ## GitHub and trigger context
 
 | Variable | Required | Default | Meaning | Current usage |
 | --- | --- | --- | --- | --- |
-| `GITHUB_TOKEN` | Yes | None | GitHub token used by both the worker control plane and the agent subprocess for issue, PR, and git operations. | Actively used everywhere GitHub access is required. Startup fails without it. |
+| `GITHUB_TOKEN` | Yes | None | GitHub token used by both the worker control plane and the agent subprocess for issue, PR, and git operations. | Actively used everywhere GitHub access is required. Startup fails without it. For Cloud Run Jobs, inject from the Phase 5 GSM secret catalog instead of plaintext env values. |
 | `TRIGGER_SOURCE` | No | `manual` | Intended source label for the current run, such as `manual`, `event`, or `scheduled`. | Parsed into config but not currently used for branching behavior. |
 | `TARGET_ISSUE` | No | empty | Optional issue number for a targeted run. Must be a positive integer when set. | Actively used. If set, the worker tries that issue before normal queue selection, but only if the issue is eligible for the current lane. |
 | `TARGET_PR` | No | empty | Optional PR number for a targeted or event-driven run. Must be a positive integer when set. | Parsed and validated, but not currently consumed by the worker flow. Reserved for future trigger-specific behavior. |
@@ -53,6 +53,15 @@ Use it together with [`.env.example`](../.env.example) when creating `.env.local
 | `LOCK_STALE_AFTER` | No | `15m` | Staleness threshold for the remote lane lock branch. Must be a positive Go duration string. | Actively used when deciding whether an existing lock can be reclaimed after a crash or timeout. |
 
 ## Notes by workflow
+
+### Cloud Run Jobs (Phase 5 baseline)
+
+Secret contract for cloud execution:
+
+- `GITHUB_TOKEN` is required and must be delivered as a Secret Manager-backed env var.
+- `OPENAI_API_KEY` is optional and only delivered when `AGENT_AUTH_MODE=api`.
+- Keep secret ownership and names in the Phase 5 catalog managed by `platform-infra`; this repo only consumes runtime env var values.
+- Do not pass token or key literals through Terraform env values, checked-in manifests, or `gcloud run jobs execute --update-env-vars`.
 
 ### Normal local polling
 
@@ -76,7 +85,7 @@ Recommended settings:
 
 - `AGENT_AUTH_MODE=chatgpt`
 - `GITHUB_TOKEN=<real token>`
-- `OPENAI_API_KEY` left empty
+- `OPENAI_API_KEY=` (leave blank)
 
 In this mode, GitHub auth still comes from `GITHUB_TOKEN`, while Codex auth comes from the persisted `/root/.codex` mount described in [worker-runtime.md](./worker-runtime.md).
 

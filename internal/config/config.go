@@ -24,6 +24,8 @@ const (
 	AgentAuthModeAPI     AgentAuthMode = "api"
 )
 
+const secretPlaceholderValue = "replace_me"
+
 type Config struct {
 	AppEnv           string
 	LogLevel         string
@@ -134,10 +136,16 @@ func Load() (Config, error) {
 		return Config{}, errors.New("missing required environment variable: TARGET_REPO")
 	}
 	if cfg.GitHubToken == "" {
-		return Config{}, errors.New("missing required environment variable: GITHUB_TOKEN")
+		return Config{}, errors.New("missing required environment variable: GITHUB_TOKEN (inject from local env or Cloud Run Secret Manager-backed env var)")
+	}
+	if strings.EqualFold(cfg.GitHubToken, secretPlaceholderValue) {
+		return Config{}, errors.New("invalid GITHUB_TOKEN value: replace placeholder with a real token from local env or Cloud Run Secret Manager-backed env var")
 	}
 	if cfg.AgentAuthMode == AgentAuthModeAPI && cfg.OpenAIAPIKey == "" {
-		return Config{}, errors.New("missing required environment variable: OPENAI_API_KEY for AGENT_AUTH_MODE=api")
+		return Config{}, errors.New("missing required environment variable: OPENAI_API_KEY for AGENT_AUTH_MODE=api (inject from local env or Cloud Run Secret Manager-backed env var)")
+	}
+	if cfg.AgentAuthMode == AgentAuthModeAPI && strings.EqualFold(cfg.OpenAIAPIKey, secretPlaceholderValue) {
+		return Config{}, errors.New("invalid OPENAI_API_KEY value: replace placeholder with a real key from local env or Cloud Run Secret Manager-backed env var")
 	}
 	if cfg.PromptTemplate == "" {
 		cfg.PromptTemplate = filepath.Join("prompts", "task.md.tmpl")

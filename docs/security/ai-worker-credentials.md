@@ -78,6 +78,11 @@ Recommended secret layout per environment:
   - `ai-worker-agent-key-<worker-id>-rc`
   - `ai-worker-agent-key-<worker-id>-prod`
 
+Cloud Run runtime env mapping contract:
+
+- `GITHUB_TOKEN` <- mapped GSM GitHub PAT secret (required)
+- `OPENAI_API_KEY` <- mapped GSM provider key secret (optional; only for `AGENT_AUTH_MODE=api`)
+
 Rules:
 
 - separate secret per environment
@@ -90,6 +95,7 @@ Rules:
 
 - Cloud Run Jobs receive secret values from GSM
 - Secret references are injected through runtime configuration
+- Trigger workflows should only pass non-secret run context (`TARGET_PR`, `EVENT_ID`, and similar) at execution time
 
 ### Local
 
