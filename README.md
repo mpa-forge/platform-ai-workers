@@ -51,6 +51,11 @@ If `mise` or `asdf` is available, the script will use it to install the pinned t
   - keep `AGENT_AUTH_MODE=chatgpt`
   - set `GITHUB_TOKEN` in `.env.local`
   - leave `OPENAI_API_KEY` empty unless you intentionally switch to `AGENT_AUTH_MODE=api`
+- For Cloud Run Job runs:
+
+  - inject `GITHUB_TOKEN` from the Phase 5 GSM catalog through Cloud Run secret env delivery
+  - inject `OPENAI_API_KEY` the same way only when `AGENT_AUTH_MODE=api`
+  - do not place plaintext token/key values in Terraform env values or checked-in files
 - Required local baseline variables:
 
   - `APP_ENV`
@@ -115,6 +120,7 @@ Notes:
 - `make run-container` also mounts the repo-local `.workspaces/` directory into `/app/.workspaces`, so the worker clone and `.codex-last-message.txt` persist on your machine after the container exits.
 - The current worker still requires `GITHUB_TOKEN`; GitHub account login through `gh auth login` alone does not satisfy startup validation.
 - `OPENAI_API_KEY` is only required when `AGENT_AUTH_MODE=api`.
+- `.env.example` intentionally leaves both secret values blank so local developers must provide real local-only values.
 
 Current baseline behavior:
 

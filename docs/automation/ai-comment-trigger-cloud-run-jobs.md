@@ -39,6 +39,11 @@ Pass wake-up context as runtime env overrides when executing job:
 - `EVENT_ID=<review_or_comment_id>`
 - optional: `TARGET_ISSUE=<issue_number>`
 
+Secret delivery boundary:
+
+- `GITHUB_TOKEN` and optional `OPENAI_API_KEY` are provisioned on the Cloud Run Job as Secret Manager-backed env vars.
+- The trigger workflow must not send token/key literals via `--update-env-vars`.
+
 Worker requirements:
 
 - Idempotency keyed by `EVENT_ID`

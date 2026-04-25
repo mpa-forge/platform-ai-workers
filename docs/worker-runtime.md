@@ -47,6 +47,15 @@ The Docker entrypoints also force `HOME=/root` and `CODEX_HOME=/root/.codex` so 
 On Windows Git Bash, the Docker targets disable MSYS path conversion for these runs so Docker receives `/root/.codex` as a container path rather than a rewritten Windows path.
 `make run-container` also mounts the host repo's `.workspaces/` directory into `/app/.workspaces`, which keeps the reusable clone and `.codex-last-message.txt` available on the host after the container exits.
 
+## Cloud Run secret delivery
+
+For `WORKER_RUNTIME_MODE=cloud`, runtime secrets are consumed via env vars but must be sourced directly from Google Secret Manager through Cloud Run Job secret bindings:
+
+- required: `GITHUB_TOKEN`
+- conditional: `OPENAI_API_KEY` only when `AGENT_AUTH_MODE=api`
+
+Do not pass plaintext token/key values through Terraform env vars or runtime `--update-env-vars` overrides.
+
 ## Selection order
 
 The worker processes one lane only:
